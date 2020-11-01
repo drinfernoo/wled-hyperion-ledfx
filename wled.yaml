@@ -1,0 +1,464 @@
+automation:
+- id: wled_state
+  alias: WLED State
+  description: Keeps our input helpers up-to-date in case WLED is changed outside of HA.
+  trigger:
+  - platform: state
+    entity_id: light.wled_tv
+    attribute:
+      - effect
+      - palette
+      - speed
+      - intensity
+      - preset
+  - platform: state
+    entity_id: sensor.wled_presets
+  condition: []
+  action:
+  - service: input_number.set_value
+    data:
+      value: "{{ state_attr('light.wled_tv', 'intensity') | int }}"
+    entity_id: input_number.wled_intensity
+  - service: input_number.set_value
+    data:
+      value: "{{ state_attr('light.wled_tv', 'speed') | int }}"
+    entity_id: input_number.wled_speed
+  - service: input_select.select_option
+    data:
+      option: "{{ state_attr('light.wled_tv', 'effect') }}"
+    entity_id: input_select.wled_effect
+  - service: input_select.select_option
+    data:
+      option: "{{ state_attr('light.wled_tv', 'palette') }}"
+    entity_id: input_select.wled_palette
+  - service: script.wled_reload_presets
+    data: {}
+  mode: single
+- id: wled_settings
+  alias: WLED Settings
+  description: Updates WLED with the selected controls.
+  trigger:
+  - platform: state
+    entity_id: 
+      - input_number.wled_speed
+      - input_number.wled_intensity
+      - input_select.wled_effect
+      - input_select.wled_palette
+      - input_select.wled_preset
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: "{{ trigger.entity_id == 'input_number.wled_speed' }}"
+      - condition: template
+        value_template: "{{ state_attr('light.wled_tv', 'speed') != states('input_number.wled_speed') | int }}"
+      sequence:
+      - service: wled.effect
+        data_template:
+          entity_id: light.wled_tv
+          speed: "{{ states('input_number.wled_speed') | int }}"
+    - conditions:
+      - condition: template
+        value_template: "{{ trigger.entity_id == 'input_number.wled_intensity' }}"
+      - condition: template
+        value_template: "{{ state_attr('light.wled_tv', 'intensity') != states('input_number.wled_intensity') | int }}"
+      sequence:
+      - service: wled.effect
+        data_template:
+          entity_id: light.wled_tv
+          intensity: "{{ states('input_number.wled_intensity') | int }}"
+    - conditions:
+      - condition: template
+        value_template: "{{ trigger.entity_id == 'input_select.wled_effect' }}"
+      - condition: template
+        value_template: "{{ state_attr('light.wled_tv', 'effect') != states('input_select.wled_effect') }}"
+      sequence:
+      - service: wled.effect
+        data_template:
+          entity_id: light.wled_tv
+          effect: "{{ states('input_select.wled_effect') }}"
+    - conditions:
+      - condition: template
+        value_template: "{{ trigger.entity_id == 'input_select.wled_palette' }}"
+      - condition: template
+        value_template: "{{ state_attr('light.wled_tv', 'palette') != states('input_select.wled_palette') }}"
+      sequence:
+      - service: wled.effect
+        data_template:
+          entity_id: light.wled_tv
+          palette: "{{ states('input_select.wled_palette') }}"
+    - conditions:
+      - condition: template
+        value_template: "{{ trigger.entity_id == 'input_select.wled_preset' }}"
+      sequence:
+      - service: script.wled_load_preset
+        data_template:
+          id: "{{ states('sensor.wled_presets') | int }}"
+  mode: restart
+- id: wled_mode
+  alias: WLED Mode
+  description: Control WLED's Override/UDP/E1.31 control status.
+  trigger:
+  - platform: state
+    entity_id: input_select.wled_mode
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: input_select.wled_mode
+        state: Manual
+      sequence:
+      - service: switch.turn_on
+        data: {}
+        entity_id: switch.wled_live_override
+    - conditions:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: input_select.wled_mode
+            state: Match TV Colors
+          - condition: state
+            entity_id: input_select.wled_mode
+            state: Match Music
+      sequence:
+      - service: switch.turn_off
+        data: {}
+        entity_id: switch.wled_live_override
+    default: []
+  mode: single
+
+input_select:
+  wled_effect:
+    name: Effect
+    icon: mdi:emoticon-outline
+    options:  # Updated for WLED 0.11.0
+      - Solid
+      - Blink
+      - Breathe
+      - Wipe
+      - Wipe Random
+      - Random Colors
+      - Sweep
+      - Dynamic
+      - Colorloop
+      - Rainbow
+      - Scan
+      - Scan Dual
+      - Fade
+      - Theater
+      - Theater Rainbow
+      - Running
+      - Saw
+      - Twinkle
+      - Dissolve
+      - Dissolve Rnd
+      - Sparkle
+      - Sparkle Dark
+      - Sparkle+
+      - Strobe
+      - Strobe Rainbow
+      - Strobe Mega
+      - Blink Rainbow
+      - Android
+      - Chase
+      - Chase Random
+      - Chase Rainbow
+      - Chase Flash
+      - Chase Flash Rnd
+      - Rainbow Runner
+      - Colorful
+      - Traffic Light
+      - Sweep Random
+      - Running 2
+      - Red & Blue
+      - Stream
+      - Scanner
+      - Lighthouse
+      - Fireworks
+      - Rain
+      - Merry Christmas
+      - Fire Flicker
+      - Gradient
+      - Loading
+      - Police
+      - Police All
+      - Two Dots
+      - Two Areas
+      - Circus
+      - Halloween
+      - Tri Chase
+      - Tri Wipe
+      - Tri Fade
+      - Lightning
+      - ICU
+      - Multi Comet
+      - Scanner Dual
+      - Stream 2
+      - Oscillate
+      - Pride 2015
+      - Juggle
+      - Palette
+      - Fire 2012
+      - Colorwaves
+      - Bpm
+      - Fill Noise
+      - Noise 1
+      - Noise 2
+      - Noise 3
+      - Noise 4
+      - Colortwinkles
+      - Lake
+      - Meteor
+      - Meteor Smooth
+      - Railway
+      - Ripple
+      - Twinklefox
+      - Twinklecat
+      - Halloween Eyes
+      - Solid Pattern
+      - Solid Pattern Tri
+      - Spots
+      - Spots Fade
+      - Glitter
+      - Candle
+      - Fireworks Starburst
+      - Fireworks 1D
+      - Bouncing Balls
+      - Sinelon
+      - Sinelon Dual
+      - Sinelon Rainbow
+      - Popcorn
+      - Drip
+      - Plasma
+      - Percent
+      - Ripple Rainbow
+      - Heartbeat
+      - Pacifica
+      - Candle Multi
+      - Solid Glitter
+      - Sunrise
+      - Phased
+      - Twinkleup
+      - Noise Pal
+      - Sine
+      - Phased Noise
+      - Flow
+      - Chunchun
+      - Dancing Shadows
+      - Washing Machine
+  wled_palette:
+    name: Palette
+    icon: mdi:palette
+    options:  # Updated for WLED 0.11.0
+      - Default
+      - "* Random Cycle"
+      - "* Color 1"
+      - "* Colors 1&2"
+      - "* Color Gradient"
+      - "* Colors Only"
+      - Party
+      - Cloud
+      - Lava
+      - Ocean
+      - Forest
+      - Rainbow
+      - Rainbow Bands
+      - Sunset
+      - Rivendell
+      - Breeze
+      - Red & Blue
+      - Yellowout
+      - Analogous
+      - Splash
+      - Pastel
+      - Sunset 2
+      - Beech
+      - Vintage
+      - Departure
+      - Landscape
+      - Beach
+      - Sherbet
+      - Hult
+      - Hult 64
+      - Drywet
+      - Jul
+      - Grintage
+      - Rewhi
+      - Tertiary
+      - Fire
+      - Icefire
+      - Cyane
+      - Light Pink
+      - Autumn
+      - Magenta
+      - Magred
+      - Yelmag
+      - Yelblu
+      - Orange & Teal
+      - Tiamat
+      - April Night
+      - Orangery
+      - C9
+      - Sakura
+      - Aurora
+      - Atlantica
+      - C9 2
+      - C9 New
+  wled_preset:
+    name: Preset
+    icon: mdi:heart-outline
+    options:
+      - Preset 1
+      - Preset 2
+      - Preset 3
+      - Preset 4
+      - Preset 5
+      - Preset 6
+      - Preset 7
+      - Preset 8
+      - Preset 9
+      - Preset 10
+      - Preset 11
+      - Preset 12
+      - Preset 13
+      - Preset 14
+      - Preset 15
+      - Preset 16
+  wled_mode:
+    name: Mode
+    icon: mdi:star-outline
+    options:
+      - Manual
+      - Match TV Colors  # <--- Comment out this line if you don't use Hyperion
+      - Match Music      # <--- Comment out this line if you don't use LedFx
+
+input_number:
+  wled_intensity:
+    name: Intensity
+    icon: mdi:fire
+    initial: 0
+    min: 0
+    max: 255
+    step: 1
+  wled_speed:
+    name: Speed
+    icon: mdi:timer-outline
+    initial: 0
+    min: 0
+    max: 255
+    step: 1
+  wled_preset_id:
+    name: New Preset ID
+    icon: mdi:pound
+    initial: 1
+    min: 1
+    max: 250
+    step: 1
+    
+input_text:
+  wled_current_preset:
+    name: Current Preset
+  wled_preset_name:
+    name: New Preset Name
+
+rest_command:
+  wled_save_preset:
+    url: !secret wled_state
+    method: 'POST'
+    payload: "{ \"psave\": {{ id }}, \"ib\": false, \"n\": \"{{ name }}\" }"
+    headers:
+      Content-Type: application/json
+
+script:
+  wled_reload_presets:
+    alias: Reload Presets
+    icon: mdi:refresh
+    description: Keeps our preset list up-to-date with WLED.
+    sequence:
+    - service: input_text.set_value
+      data:
+        value: >
+          {{ states('input_select.wled_preset') }}
+        entity_id: input_text.wled_current_preset
+      entity_id: input_text.wled_current_preset
+    - service: input_select.set_options
+      data:
+        options: >-
+          {{ state_attr('sensor.wled_presets', 'list') }}
+        entity_id: input_select.wled_preset
+      entity_id: input_select.wled_preset
+    - service: input_select.select_option
+      data:
+        option: >
+          {{ states('input_text.wled_current_preset') }}
+        entity_id: input_select.wled_preset
+      entity_id: input_select.wled_preset
+    mode: single
+  wled_load_preset:
+    alias: Load Preset
+    icon: mdi:folder-open-outline
+    description: Loads a preset from WLED, by ID.
+    sequence:
+      - service: wled.preset
+        data:
+          entity_id: light.wled_tv
+          preset: "{{ id }}"
+        entity_id: light.wled_tv
+    mode: single
+  wled_save_preset:
+    alias: Save Preset
+    icon: mdi:content-save
+    description: Saves a named preset to WLED. If name is left blank, a default will be used.
+    sequence:
+      - service: rest_command.wled_save_preset
+        data:
+          id: "{{ states('input_number.wled_preset_id') | int }}"
+          name: "{{ states('input_text.wled_preset_name') if states('input_text.wled_preset_name') else 'Preset {}'.format(states('input_number.wled_preset_id') | int) }}"
+        entity_id: light.wled_tv
+    mode: single
+
+sensor:
+  - platform: rest
+    name: WLED Preset IDs
+    resource: !secret wled_presets
+    force_update: true
+    value_template: >
+      {%- for i in value_json -%}{{ i }}{{ ',' if not loop.last else '' }}{% endfor %}
+  - platform: rest
+    name: WLED Preset Names
+    resource: !secret wled_presets
+    force_update: true
+    value_template: >
+      {%- for i in value_json -%}{{ value_json[i]['n'] }}{{ ',' if not loop.last else '' }}{% endfor %}
+  - platform: template
+    sensors:
+      wled_preset_map:
+        friendly_name: WLED Preset Map
+        icon_template: mdi:map-outline
+        value_template: >
+          {{ states('sensor.wled_presets') }}
+        attribute_templates:
+          map: >
+            {{ state_attr('sensor.wled_presets', 'map') }}
+      wled_presets:
+        friendly_name: WLED Presets
+        icon_template: mdi:heart-outline
+        value_template: >-
+          {{ state_attr('sensor.wled_preset_map', 'map')[states('input_select.wled_preset')] }}
+        attribute_templates:
+          list: >-
+            {{ states('sensor.wled_preset_names').split(',')[1:] | list }}
+          map: >
+            {%- set names = states('sensor.wled_preset_names').split(',') -%}
+            {%- set ids = states('sensor.wled_preset_ids').split(',') -%}
+            { {%- for i in (range(1, ids | length) | list) -%}"{{ names[i] }}":{{ ids[i] }}{{ ',' if not loop.last else '' }}{%- endfor -%}}
+
+switch:
+  - platform: rest  # Controls WLED live override state via JSON API
+    name: WLED Live Override
+    resource: !secret wled_state
+    is_on_template: '{{ value_json.lor > 0 }}'
+    body_on: '{"lor": 1}'
+    body_off: '{"lor": 0}'

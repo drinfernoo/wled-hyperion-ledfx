@@ -1,0 +1,5 @@
+homeassistant:
+  packages:
+    hyperion: !include hyperion.yaml  # <--- Comment out this line if you don't use Hyperion
+    ledfx: !include ledfx.yaml        # <--- Comment out this line if you don't use LedFx
+    wled: !include wled.yaml

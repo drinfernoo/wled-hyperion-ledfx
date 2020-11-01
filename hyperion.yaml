@@ -1,0 +1,206 @@
+automation:
+- id: hyperion
+  alias: Hyperion
+  trigger:
+  - platform: state
+    entity_id: input_select.wled_mode
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: input_select.wled_mode
+            state: Manual
+          - condition: state
+            entity_id: input_select.wled_mode
+            state: Match Music
+      sequence:
+      - service: switch.turn_off
+        data: {}
+        entity_id: switch.hyperion_v4l
+    - conditions:
+      - condition: state
+        entity_id: input_select.wled_mode
+        state: Match TV Colors
+      sequence:
+      - service: switch.turn_on
+        data: {}
+        entity_id: switch.hyperion_v4l
+    default: []
+  - service: homeassistant.update_entity
+    data: {}
+    entity_id: sensor.hyperion_server_info
+  mode: single
+- id: hyperion_components
+  alias: Hyperion Components
+  description: Updates Hyperion with the selected components.
+  trigger:
+  - platform: state
+    entity_id: 
+      - switch.hyperion_all
+      - switch.hyperion_smoothing
+      - switch.hyperion_blackborder
+      - switch.hyperion_forwarder
+      - switch.hyperion_boblightserver
+      - switch.hyperion_grabber
+      - switch.hyperion_v4l
+      - switch.hyperion_leddevice
+  condition: []
+  action:
+  - service: homeassistant.update_entity
+    data: {}
+    entity_id: sensor.hyperion_server_info
+  mode: single
+
+sensor:
+  - platform: rest
+    name: Hyperion Server Info
+    resource: !secret hyperion
+    method: 'POST'
+    json_attributes:
+      - info
+      - success
+    payload: '{ "command" : "serverinfo" }'
+    headers:
+      Content-Type: application/json
+    value_template: "{{ value_json['success'] }}"
+  - platform: template
+    sensors:
+      hyperion_components:
+        friendly_name: Hyperion
+        icon_template: mdi:server
+        value_template: "{{ 'Connected' if state_attr('sensor.hyperion_server_info', 'success') else 'Not Connected' }}"
+        attribute_templates:
+          all: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][0]['enabled'] else 'off' }}"
+          smoothing: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][1]['enabled'] else 'off'  }}"
+          blackborder: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][2]['enabled'] else 'off'  }}"
+          forwarder: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][3]['enabled'] else 'off'  }}"
+          boblightserver: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][4]['enabled'] else 'off'  }}"
+          grabber: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][5]['enabled'] else 'off'  }}"
+          v4l: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][6]['enabled'] else 'off'  }}"
+          leddevice: "{{ 'on' if state_attr('sensor.hyperion_server_info', 'info')['components'][7]['enabled'] else 'off'  }}"
+
+switch:
+  - platform: template
+    switches:
+      hyperion_all:
+        friendly_name: Hyperion All
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'all', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'ALL'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'ALL'
+            state: 'false'
+        icon_template: mdi:tune
+      hyperion_smoothing:
+        friendly_name: Hyperion Smoothing
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'smoothing', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'SMOOTHING'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'SMOOTHING'
+            state: 'false'
+        icon_template: mdi:gradient
+      hyperion_blackborder:
+        friendly_name: Hyperion Black Border
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'blackborder', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'BLACKBORDER'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'BLACKBORDER'
+            state: 'false'
+        icon_template: mdi:border-outside
+      hyperion_forwarder:
+        friendly_name: Hyperion Forwarder
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'forwarder', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'FORWARDER'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'FORWARDER'
+            state: 'false'
+        icon_template: mdi:export
+      hyperion_boblightserver:
+        friendly_name: Hyperion Boblight Server
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'boblightserver', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'BOBLIGHTSERVER'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'BOBLIGHTSERVER'
+            state: 'false'
+        icon_template: mdi:server
+      hyperion_grabber:
+        friendly_name: Hyperion Grabber
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'grabber', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'GRABBER'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'GRABBER'
+            state: 'false'
+        icon_template: mdi:monitor-screenshot
+      hyperion_v4l:
+        friendly_name: Hyperion V4L
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'v4l', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'V4L'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'V4L'
+            state: 'false'
+        icon_template: mdi:usb-port
+      hyperion_leddevice:
+        friendly_name: Hyperion LED Device
+        value_template: "{{ is_state_attr('sensor.hyperion_components', 'leddevice', 'on') }}"
+        turn_on:
+          service: rest_command.hyperion_component
+          data:
+            component: 'LEDDEVICE'
+            state: 'true'
+        turn_off:
+          service: rest_command.hyperion_component
+          data:
+            component: 'LEDDEVICE'
+            state: 'false'
+        icon_template: mdi:led-outline
+
+rest_command:
+  hyperion_component:
+    url: !secret hyperion
+    method: 'POST'
+    payload: '{"command": "componentstate", "componentstate": {"component": "{{ component }}", "state": {{ state }}}}'
+    content_type: application/json

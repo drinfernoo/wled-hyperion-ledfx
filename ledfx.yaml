@@ -1,0 +1,36 @@
+automation:
+- id: ledfx
+  alias: LedFx
+  trigger:
+  - platform: state
+    entity_id: input_select.wled_mode
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: input_select.wled_mode
+            state: Manual
+          - condition: state
+            entity_id: input_select.wled_mode
+            state: Match TV Colors
+      sequence:
+      - service: light.turn_on
+        data:
+          effect: 'off'
+          entity_id: light.ledfx_scenes
+        entity_id: light.ledfx_scenes
+    - conditions:
+      - condition: state
+        entity_id: input_select.wled_mode
+        state: Match Music
+      sequence:
+      - service: light.turn_on
+        data:
+          effect: spectrum
+          entity_id: light.ledfx_scenes
+        entity_id: light.ledfx_scenes
+    default: []
+  mode: single
