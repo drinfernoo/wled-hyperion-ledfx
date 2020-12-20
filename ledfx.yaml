@@ -21,7 +21,6 @@ automation:
         data:
           effect: 'off'
           entity_id: light.ledfx_scenes
-        entity_id: light.ledfx_scenes
     - conditions:
       - condition: state
         entity_id: input_select.wled_mode
@@ -31,6 +30,5 @@ automation:
         data:
           effect: spectrum
           entity_id: light.ledfx_scenes
-        entity_id: light.ledfx_scenes
     default: []
   mode: single

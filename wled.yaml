@@ -1,27 +1,19 @@
 automation:
 - id: wled_state
   alias: WLED State
-  description: Keeps our input helpers up-to-date in case WLED is changed outside of HA.
+  description: Keeps our input helper values up-to-date in case WLED is changed outside of HA.
   trigger:
   - platform: state
     entity_id: light.wled_tv
-    attribute:
-      - effect
-      - palette
-      - speed
-      - intensity
-      - preset
-  - platform: state
-    entity_id: sensor.wled_presets
   condition: []
   action:
   - service: input_number.set_value
     data:
-      value: "{{ state_attr('light.wled_tv', 'intensity') | int }}"
+              value: "{{ state_attr('light.wled_tv', 'intensity') }}"
     entity_id: input_number.wled_intensity
   - service: input_number.set_value
     data:
-      value: "{{ state_attr('light.wled_tv', 'speed') | int }}"
+              value: "{{ state_attr('light.wled_tv', 'speed') }}"
     entity_id: input_number.wled_speed
   - service: input_select.select_option
     data:
@@ -36,7 +28,7 @@ automation:
   mode: single
 - id: wled_settings
   alias: WLED Settings
-  description: Updates WLED with the selected controls.
+  description: Updates WLED with the selected values.
   trigger:
   - platform: state
     entity_id: 
@@ -98,7 +90,7 @@ automation:
   mode: restart
 - id: wled_mode
   alias: WLED Mode
-  description: Control WLED's Override/UDP/E1.31 control status.
+  description: Control WLED's Override/Live control status.
   trigger:
   - platform: state
     entity_id: input_select.wled_mode
@@ -405,7 +397,6 @@ script:
         data:
           entity_id: light.wled_tv
           preset: "{{ id }}"
-        entity_id: light.wled_tv
     mode: single
   wled_save_preset:
     alias: Save Preset
