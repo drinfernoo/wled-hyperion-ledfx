@@ -7,22 +7,86 @@ automation:
     entity_id: light.wled_tv
   condition: []
   action:
-  - service: input_number.set_value
-    data:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ state_attr('light.wled_tv', 'intensity') !=
+              states('input_number.wled_intensity') | int }}
+        sequence:
+          - service: input_number.set_value
+            data:
               value: "{{ state_attr('light.wled_tv', 'intensity') }}"
-    entity_id: input_number.wled_intensity
-  - service: input_number.set_value
-    data:
+              entity_id: input_number.wled_intensity
+    default: []
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ state_attr('light.wled_tv', 'speed') !=
+              states('input_number.wled_speed') | int }}
+        sequence:
+          - service: input_number.set_value
+            data:
               value: "{{ state_attr('light.wled_tv', 'speed') }}"
-    entity_id: input_number.wled_speed
-  - service: input_select.select_option
-    data:
-      option: "{{ state_attr('light.wled_tv', 'effect') }}"
-    entity_id: input_select.wled_effect
-  - service: input_select.select_option
-    data:
-      option: "{{ state_attr('light.wled_tv', 'palette') }}"
-    entity_id: input_select.wled_palette
+              entity_id: input_number.wled_speed
+    default: []
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ state_attr('light.wled_tv', 'effect') !=
+              states('input_select.wled_effect') }}
+        sequence:
+          - service: input_select.select_option
+            data:
+              option: "{{ state_attr('light.wled_tv', 'effect') }}"
+              entity_id: input_select.wled_effect
+    default: []
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ state_attr('light.wled_tv', 'palette') !=
+              states('input_select.wled_palette') }}
+        sequence:
+          - service: input_select.select_option
+            data:
+              option: "{{ state_attr('light.wled_tv', 'palette') }}"
+              entity_id: input_select.wled_palette
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ state_attr('light.wled_tv', 'preset') !=
+              state_attr('sensor.wled_presets', 'map')[states('input_select.wled_palette')] }}
+        sequence:
+          - service: input_select.select_option
+            data:
+              entity_id: input_select.wled_preset
+              option: >
+                {{ state_attr('sensor.wled_presets', 'list')[state_attr('sensor.wled_presets', 'list').index(states('input_select.wled_preset'))] }}
+          - service: input_text.set_value
+            data:
+              entity_id: input_text.wled_preset_name
+              value: >
+                {{ states('input_select.wled_preset') }}
+          - service: input_number.set_value
+            data:
+              entity_id: input_number.wled_preset_id
+              value: "{{ state_attr('light.wled_tv', 'preset') | int }}"
+    default: []
+  mode: single
+- id: wled_presets
+  alias: WLED Presets
+  description: Keep the presets list up-to-date with WLED.
+  trigger:
+    - platform: state
+      entity_id: sensor.wled_preset_map
+    - platform: homeassistant
+      event: start
+  condition: []
+  action:
   - service: script.wled_reload_presets
     data: {}
   mode: single
