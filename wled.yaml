@@ -436,21 +436,18 @@ script:
     - service: input_text.set_value
       data:
         value: >
-          {{ states('input_select.wled_preset') }}
+          {{ states('input_select.wled_preset') if not new else states('input_text.wled_preset_name') }}
         entity_id: input_text.wled_current_preset
-      entity_id: input_text.wled_current_preset
     - service: input_select.set_options
       data:
         options: >-
-          {{ state_attr('sensor.wled_presets', 'list') }}
+          {{ state_attr('sensor.wled_presets', 'list') if not new else [states('input_text.wled_preset_name')] }}
         entity_id: input_select.wled_preset
-      entity_id: input_select.wled_preset
     - service: input_select.select_option
       data:
         option: >
           {{ states('input_text.wled_current_preset') }}
         entity_id: input_select.wled_preset
-      entity_id: input_select.wled_preset
     mode: single
   wled_load_preset:
     alias: Load Preset
@@ -470,8 +467,14 @@ script:
       - service: rest_command.wled_save_preset
         data:
           id: "{{ states('input_number.wled_preset_id') | int }}"
-          name: "{{ states('input_text.wled_preset_name') if states('input_text.wled_preset_name') else 'Preset {}'.format(states('input_number.wled_preset_id') | int) }}"
+          name: >
+            {{ states('input_text.wled_preset_name')
+               if states('input_text.wled_preset_name')
+               else 'Preset {}'.format(states('input_number.wled_preset_id') | int) }}
         entity_id: light.wled_tv
+      - service: script.wled_reload_presets
+        data:
+          new: true
     mode: single
 
 sensor:
@@ -503,6 +506,8 @@ sensor:
         value_template: >-
           {{ state_attr('sensor.wled_preset_map', 'map')[states('input_select.wled_preset')] }}
         attribute_templates:
+          ids: >-
+            {{ states('sensor.wled_preset_ids').split(',')[1:] | list }}
           list: >-
             {{ states('sensor.wled_preset_names').split(',')[1:] | list }}
           map: >
