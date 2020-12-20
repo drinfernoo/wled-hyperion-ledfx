@@ -1,0 +1,130 @@
+type: 'custom:stack-in-card'
+cards:
+  - type: entities
+    entities:
+      - light.wled_tv
+  - type: conditional
+    conditions:
+      - entity: light.wled_tv
+        state: 'on'
+    card:
+      type: vertical-stack
+      cards:
+        - type: entities
+          entities:
+            - input_select.wled_mode
+        - type: iframe
+          url: 'http://<wled-ip>/liveview'
+          aspect_ratio: 1%
+        - type: conditional
+          conditions:
+            - entity: input_select.wled_mode
+              state: Manual
+          card:
+            type: vertical-stack
+            cards:
+              - type: 'custom:light-entity-card'
+                entity: light.wled_tv
+                color_wheel: true
+                persist_features: false
+                brightness: false
+                color_temp: false
+                white_value: false
+                color_picker: true
+                smooth_color_wheel: false
+                show_slider_percent: true
+                full_width_sliders: true
+                hide_header: true
+                effects_list: false
+                brightness_icon: weather-sunny
+                white_icon: file-word-box
+                temperature_icon: thermometer
+              - type: entities
+                entities:
+                  - type: 'custom:slider-entity-row'
+                    entity: light.wled_tv
+                    name: Brightness
+                    icon: 'mdi:brightness-5'
+                    state_color: false
+                  - input_number.wled_speed
+                  - input_number.wled_intensity
+                  - input_select.wled_palette
+                  - input_select.wled_effect
+                  - type: 'custom:fold-entity-row'
+                    head: input_select.wled_preset
+                    entities:
+                      - entity: sensor.wled_presets
+                        name: Current Preset ID
+                      - input_text.wled_preset_name
+                      - input_number.wled_preset_id
+                      - entity: script.wled_save_preset
+                        action_name: Save
+        - type: conditional  # <--- Comment out this card if you don't use Hyperion
+          conditions:
+            - entity: input_select.wled_mode
+              state: Match TV Colors
+          card:
+            type: vertical-stack
+            cards:
+              - type: entity
+                entity: sensor.hyperion_components
+              - type: entities
+                entities:
+                  - type: 'custom:slider-entity-row'
+                    entity: light.wled_tv
+                    name: Brightness
+                    state_color: false
+              - type: glance
+                columns: 8
+                show_state: false
+                show_name: false
+                entities:
+                  - entity: switch.hyperion_all
+                    tap_action:
+                      action: toggle
+                  - entity: switch.hyperion_smoothing
+                    tap_action:
+                      action: toggle
+                  - entity: switch.hyperion_blackborder
+                    tap_action:
+                      action: toggle
+                  - entity: switch.hyperion_forwarder
+                    tap_action:
+                      action: toggle
+                  - entity: switch.hyperion_grabber
+                    tap_action:
+                      action: toggle
+                  - entity: switch.hyperion_boblightserver
+                    tap_action:
+                      action: toggle
+                  - entity: switch.hyperion_v4l
+                    tap_action:
+                      action: toggle
+                  - entity: switch.hyperion_leddevice
+                    tap_action:
+                      action: toggle
+        - type: conditional  # <--- Comment out this card if you don't use LedFx
+          conditions:
+            - entity: input_select.wled_mode
+              state: Match Music
+          card:
+            type: vertical-stack
+            cards:
+              - type: entity
+                entity: binary_sensor.ledfx_status
+              - type: glance
+                show_name: false
+                state_color: true
+                entities:
+                  - sensor.ledfx_scenes
+                  - sensor.ledfx_devices
+                  - sensor.ledfx_pixels
+              - type: 'custom:light-entity-card'
+                entity: light.ledfx_scenes
+                child_card: true
+                hide_header: true
+                persist_features: true
+                brightness: false
+                color_temp: false
+                color_picker: false
+                white_value: false
