@@ -17,17 +17,19 @@ automation:
             entity_id: input_select.wled_mode
             state: Match Music
       sequence:
-      - service: switch.turn_off
-        data: {}
-        entity_id: switch.hyperion_v4l
+      - service: light.turn_on
+        data: 
+          entity_id: light.hyperion
+          effect: Solid
     - conditions:
       - condition: state
         entity_id: input_select.wled_mode
         state: Match TV Colors
       sequence:
-      - service: switch.turn_on
-        data: {}
-        entity_id: switch.hyperion_v4l
+      - service: light.turn_on
+        data: 
+          entity_id: light.hyperion
+          effect: V4L
     default: []
   - service: homeassistant.update_entity
     data: {}
@@ -47,6 +49,7 @@ automation:
       - switch.hyperion_grabber
       - switch.hyperion_v4l
       - switch.hyperion_leddevice
+      - light.hyperion
   condition: []
   action:
   - service: homeassistant.update_entity
@@ -66,6 +69,7 @@ sensor:
     headers:
       Content-Type: application/json
     value_template: "{{ value_json['success'] }}"
+    force_update: true
   - platform: template
     sensors:
       hyperion_components:
