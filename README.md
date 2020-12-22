@@ -1,4 +1,4 @@
-# ha-wled-hyperion
+# wled-hyperion-ledfx
 A simple implementation of the "missing" features from the WLED integration for Home Assistant,
 including overriding Hyperion and LedFx, for users of each.
 
